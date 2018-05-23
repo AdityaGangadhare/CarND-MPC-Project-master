@@ -104,5 +104,30 @@ that's just a guess.
 One last note here: regardless of the IDE used, every submitted project must
 still be compilable with cmake and make./
 
-## How to write a README
-A well written README file can enhance your project and portfolio.  Develop your abilities to create professional README files by completing [this free course](https://www.udacity.com/course/writing-readmes--ud777).
+## Implementation
+---
+
+### The Model
+
+Kinematic model is used in which the interaction between tire and road is neglected. The model includes the vehicle's x and y coordinates, heading (psi), and velocity, as well as the cross-track error(cte) and psi error (epsi). Actuator controls are acceleration and delta (steering angle). The model equations are as follow:
+
+- x[t] = x[t-1] + v[t-1] * cos(psi[t-1]) * dt
+- y[t] = y[t-1] + v[t-1] * sin(psi[t-1]) * dt
+- psi[t] = psi[t-1] + v[t-1] / Lf * delta[t-1] * dt
+- v[t] = v[t-1] + a[t-1] * dt
+- cte[t] = f(x[t-1]) - y[t-1] + v[t-1] * sin(epsi[t-1]) * dt
+- epsi[t] = psi[t] - psides[t-1] + v[t-1] * delta[t-1] / Lf * dt
+
+### Timestep Length and Elapsed Duration (N & dt)
+
+The number of points(N) and the time interval(dt) are chosen as 10 and 0.1. Adjusting either N or dt (even by small amounts) often produced erratic behavior. The number of points also impacts the controller performance as well.
+
+### Polynomial Fitting and MPC Preprocessing
+
+The waypoints provided by the simulator are transformed to the car coordinate system. Then a 3rd-degree polynomial is fitted to the transformed waypoints. These polynomial coefficients are used to calculate the cte and epsi later on. They are used by the solver as well to create a reference trajectory.
+
+### Model Predictive Control with Latency
+
+New state values are calculated using the model and delay. These new values are used instead of initial.
+
+Click [here](https://youtu.be/bRRPW0jQ5sY) to view the output video.
