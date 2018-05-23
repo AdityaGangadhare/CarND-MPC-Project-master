@@ -100,10 +100,11 @@ int main() {
           * Both are in between [-1, 1].
           *
           */
-          
+
 /*******************************************************************************
 *          Convert waypoint coordinates to cars coordintes                     *
 *******************************************************************************/
+
           auto x_trans = Eigen::VectorXd(ptsx.size());
           auto y_trans = Eigen::VectorXd(ptsx.size());
           for (unsigned int i = 0; i < ptsx.size(); i++ ) {
@@ -114,26 +115,26 @@ int main() {
             y_trans( i ) = dX * sin( minus_psi ) + dY * cos( minus_psi );
           }
 
-          // Fit polynomial to the points - 3rd order.
+          // Fit 3rd order polynomial to the points.
           auto coeffs = polyfit(x_trans, y_trans, 3);
 
-          // Delay in seconds.
+          // Actuator delay in seconds.
           const double delay = 0.1;
 
           // Initial state.
-          const double x_ini = 0;
-          const double y_ini = 0;
-          const double psi_ini = 0;
-          const double cte_ini = coeffs[0];
-          const double epsi_ini = -atan(coeffs[1]);
+          const double x0 = 0;
+          const double y0 = 0;
+          const double psi0 = 0;
+          const double cte0 = coeffs[0];
+          const double epsi0 = -atan(coeffs[1]);
 
           // State after delay.
-          double x_delay = x_ini + ( v * cos(psi_ini) * delay );
-          double y_delay = y_ini + ( v * sin(psi_ini) * delay );
-          double psi_delay = psi_ini - ( v * delta * delay / mpc.Lf );
+          double x_delay = x0 + ( v * cos(psi0) * delay );
+          double y_delay = y0 + ( v * sin(psi0) * delay );
+          double psi_delay = psi0 - ( v * delta * delay / mpc.Lf );
           double v_delay = v + a * delay;
-          double cte_delay = cte_ini + ( v * sin(epsi_ini) * delay );
-          double epsi_delay = epsi_ini - ( v * atan(coeffs[1]) * delay / mpc.Lf );
+          double cte_delay = cte0 + ( v * sin(epsi0) * delay );
+          double epsi_delay = epsi0 - ( v * atan(coeffs[1]) * delay / mpc.Lf );
 
           // Define the state vector.
           Eigen::VectorXd state(6);
@@ -151,9 +152,17 @@ int main() {
           msgJson["steering_angle"] = steer_value;
           msgJson["throttle"] = throttle_value;
 
-          //Display the MPC predicted trajectory 
+          //Display the MPC predicted trajectory
           vector<double> mpc_x_vals;
           vector<double> mpc_y_vals;
+
+          for ( int i = 2; i < vars.size(); i++ ) {
+            if ( i % 2 == 0 ) {
+              mpc_x_vals.push_back( vars[i] );
+            } else {
+              mpc_y_vals.push_back( vars[i] );
+            }
+          }
 
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Green line
@@ -165,6 +174,14 @@ int main() {
           vector<double> next_x_vals;
           vector<double> next_y_vals;
 
+          double poly_inc = 2.5;
+          int num_points = 25;
+          for ( int i = 0; i < num_points; i++ ) {
+            double x = poly_inc * i;
+            next_x_vals.push_back( x );
+            next_y_vals.push_back( polyeval(coeffs, x) );
+          }
+
           //.. add (x,y) points to list here, points are in reference to the vehicle's coordinate system
           // the points in the simulator are connected by a Yellow line
 
@@ -173,7 +190,7 @@ int main() {
 
 
           auto msg = "42[\"steer\"," + msgJson.dump() + "]";
-          std::cout << msg << std::endl;
+          // std::cout << msg << std::endl;
           // Latency
           // The purpose is to mimic real driving conditions where
           // the car does actuate the commands instantly.

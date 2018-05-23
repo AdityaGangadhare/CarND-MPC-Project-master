@@ -20,6 +20,18 @@ double dt = 0.1;
 //
 // This is the length from front to CoG that has a similar radius.
 const double Lf = 2.67;
+const double ref_cte = 0;
+const double ref_epsi = 0;
+const double ref_v = 100;
+
+const size_t x_start = 0;
+const size_t y_start = x_start + N;
+const size_t psi_start = y_start + N;
+const size_t v_start = psi_start + N;
+const size_t cte_start = v_start + N;
+const size_t epsi_start = cte_start + N;
+const size_t delta_start = epsi_start + N;
+const size_t a_start = delta_start + N - 1;
 
 class FG_eval {
  public:
@@ -50,7 +62,6 @@ class FG_eval {
         }
     
         // Minimize the value gap between sequential actuations.
-        // (how smooth the actuations are)
         for (int i = 0; i < N - 2; i++) {
           fg[0] += 250000*CppAD::pow(vars[delta_start + i + 1] - vars[delta_start + i], 2);
           fg[0] += 5000*CppAD::pow(vars[a_start + i + 1] - vars[a_start + i], 2);
@@ -65,7 +76,7 @@ class FG_eval {
         fg[1 + epsi_start] = vars[epsi_start];
     
         for (int t = 1; t < N; t++) {
-          // The state at time t+1 .
+          // State at time t+1 .
           AD<double> x1 = vars[x_start + t];
           AD<double> y1 = vars[y_start + t];
           AD<double> psi1 = vars[psi_start + t];
@@ -73,7 +84,7 @@ class FG_eval {
           AD<double> cte1 = vars[cte_start + t];
           AD<double> epsi1 = vars[epsi_start + t];
     
-          // The state at time t.
+          // State at time t.
           AD<double> x0 = vars[x_start + t - 1];
           AD<double> y0 = vars[y_start + t - 1];
           AD<double> psi0 = vars[psi_start + t - 1];
@@ -107,7 +118,6 @@ class FG_eval {
     }
   }
 };
-
 //
 // MPC class definition implementation.
 //
@@ -137,9 +147,15 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
   // SHOULD BE 0 besides initial state.
   Dvector vars(n_vars);
   for (int i = 0; i < n_vars; i++) {
-    vars[i] = 0;
+    vars[i] = 0.0;
   }
-
+    // Set the initial variable values
+  vars[x_start] = x;
+  vars[y_start] = y;
+  vars[psi_start] = psi;
+  vars[v_start] = v;
+  vars[cte_start] = cte;
+  vars[epsi_start] = epsi;
   Dvector vars_lowerbound(n_vars);
   Dvector vars_upperbound(n_vars);
   // TODO: Set lower and upper limits for variables.
@@ -233,5 +249,5 @@ vector<double> MPC::Solve(Eigen::VectorXd state, Eigen::VectorXd coeffs) {
       result.push_back(solution.x[x_start + i + 1]);
       result.push_back(solution.x[y_start + i + 1]);
     }
-  return {};
+  return result;
 }
